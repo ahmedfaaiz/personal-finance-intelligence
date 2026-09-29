@@ -5,7 +5,8 @@ from app.database import get_db
 from app.models import CleaningLog, RejectedRow, Transaction, Upload
 from app.services.cleaning import clean_dataframe
 from app.services.ingestion import MAX_FILE_SIZE_BYTES, IngestionError, read_csv_bytes
-
+from app.services.categorization import categorize_rule_based
+from app.services.ml_categorizer import ml_categorizer
 router = APIRouter(prefix="/api/uploads", tags=["uploads"])
 
 
@@ -35,6 +36,14 @@ async def upload_csv(file: UploadFile = File(...), db: Session = Depends(get_db)
     db.flush()  # assigns upload.id without fully committing yet
 
     for txn in cleaning_result.accepted:
+        rule_match = categorize_rule_based(txn.merchant, txn.description_raw)
+        if rule_match:
+            category, category_source = rule_match.category, rule_match.source
+        elif txn.type == "income":
+            category, category_source = "Salary", "rule"
+        else:
+            ml_match = ml_categorizer.predict(txn.merchant, txn.description_raw)
+            category, category_source = ml_match.category, ml_match.source
         db.add(
             Transaction(
                 upload_id=upload.id,
@@ -43,8 +52,8 @@ async def upload_csv(file: UploadFile = File(...), db: Session = Depends(get_db)
                 merchant=txn.merchant,
                 amount=txn.amount,
                 type=txn.type,
-                category="Other",  # Phase 6 will replace this
-                category_source="rule",
+                category=category,
+                category_source=category_source,
                 payment_method=txn.payment_method,
                 is_duplicate=txn.is_duplicate,
             )
