@@ -17,7 +17,7 @@ function App() {
 
   return (
     <div style={{ padding: 20, fontFamily: "sans-serif" }}>
-      <h1>Personal Finance Intelligence</h1>
+      <h1 className="text-4xl font-bold text-blue-600">Personal Finance Intelligence</h1>
       <p>Total Income: {summary.total_income}</p>
       <p>Total Expenses: {summary.total_expenses}</p>
       <p>Total Savings: {summary.total_savings}</p>
