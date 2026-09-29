@@ -1,27 +1,49 @@
 import { useEffect, useState } from "react";
-import { api, type Summary } from "./services/api";
+import { api, type Summary, type CategoryBreakdown, type MonthlyBreakdown, type DailyTrend, type TopMerchant } from "./services/api";
+import { SummaryCards } from "./components/SummaryCards";
+import { DashboardCharts } from "./components/DashboardCharts";
 
 function App() {
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [categories, setCategories] = useState<CategoryBreakdown[]>([]);
+  const [monthly, setMonthly] = useState<MonthlyBreakdown[]>([]);
+  const [trends, setTrends] = useState<DailyTrend[]>([]);
+  const [merchants, setMerchants] = useState<TopMerchant[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api
-      .getSummary()
-      .then(setSummary)
-      .catch((err) => setError(err.message));
+    Promise.all([
+      api.getSummary(),
+      api.getCategories(),
+      api.getMonthly(),
+      api.getTrends(),
+      api.getTopMerchants(),
+    ])
+      .then(([summaryData, categoriesData, monthlyData, trendsData, merchantsData]) => {
+        setSummary(summaryData);
+        setCategories(categoriesData);
+        setMonthly(monthlyData);
+        setTrends(trendsData);
+        setMerchants(merchantsData);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
   }, []);
 
-  if (error) return <div style={{ padding: 20 }}>Error: {error}</div>;
-  if (!summary) return <div style={{ padding: 20 }}>Loading...</div>;
+  if (error) {
+    return <div className="p-6 text-red-600">Error loading dashboard: {error}</div>;
+  }
+
+  if (loading || !summary) {
+    return <div className="p-6 text-gray-500">Loading dashboard...</div>;
+  }
 
   return (
-    <div style={{ padding: 20, fontFamily: "sans-serif" }}>
-      <h1 className="text-4xl font-bold text-blue-600">Personal Finance Intelligence</h1>
-      <p>Total Income: {summary.total_income}</p>
-      <p>Total Expenses: {summary.total_expenses}</p>
-      <p>Total Savings: {summary.total_savings}</p>
-      <p>Savings Rate: {(summary.savings_rate * 100).toFixed(1)}%</p>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <h1 className="text-3xl font-bold text-gray-800 mb-6">Personal Finance Intelligence</h1>
+      <SummaryCards summary={summary} />
+      <DashboardCharts categories={categories} monthly={monthly} trends={trends} merchants={merchants} />
     </div>
   );
 }
