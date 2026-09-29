@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api, type Summary, type CategoryBreakdown, type MonthlyBreakdown, type DailyTrend, type TopMerchant } from "./services/api";
 import { SummaryCards } from "./components/SummaryCards";
 import { DashboardCharts } from "./components/DashboardCharts";
+import { Chatbot } from "./components/Chatbot";
 
 function App() {
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -44,6 +45,7 @@ function App() {
       <h1 className="text-3xl font-bold text-gray-800 mb-6">Personal Finance Intelligence</h1>
       <SummaryCards summary={summary} />
       <DashboardCharts categories={categories} monthly={monthly} trends={trends} merchants={merchants} />
+     <Chatbot />    
     </div>
   );
 }
