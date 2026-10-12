@@ -44,7 +44,7 @@ export function UploadPanel({ onDataChanged }: { onDataChanged: () => void }) {
         <input
           ref={inputRef}
           type="file"
-          accept=".csv,.xlsx,.xls"
+          accept=".csv,.xlsx"         
           disabled={busy}
           onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
           className="text-sm"

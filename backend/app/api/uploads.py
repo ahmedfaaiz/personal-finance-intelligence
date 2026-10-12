@@ -3,23 +3,34 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import CleaningLog, RejectedRow, Transaction, Upload
-from app.services.cleaning import clean_dataframe
-from app.services.ingestion import MAX_FILE_SIZE_BYTES, IngestionError, read_csv_bytes
 from app.services.categorization import categorize_rule_based
+from app.services.cleaning import clean_dataframe
+from app.services.ingestion import (
+    MAX_FILE_SIZE_BYTES,
+    IngestionError,
+    read_csv_bytes,
+    read_excel_bytes,
+)
 from app.services.ml_categorizer import ml_categorizer
+
 router = APIRouter(prefix="/api/uploads", tags=["uploads"])
 
 
 @router.post("")
-async def upload_csv(file: UploadFile = File(...), db: Session = Depends(get_db)) -> dict:
+async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)) -> dict:
     filename = file.filename or ""
-    if not filename.lower().endswith(".csv"):
-        raise HTTPException(status_code=400, detail="Only .csv files are supported right now.")
+    lowered_filename = filename.lower()
+
+    if not lowered_filename.endswith((".csv", ".xlsx")):
+        raise HTTPException(status_code=400, detail="Only .csv or .xlsx files are supported.")
 
     content = await file.read(MAX_FILE_SIZE_BYTES + 1)
 
     try:
-        df = read_csv_bytes(content)
+        if lowered_filename.endswith(".csv"):
+            df = read_csv_bytes(content)
+        else:
+            df = read_excel_bytes(content)
     except IngestionError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 

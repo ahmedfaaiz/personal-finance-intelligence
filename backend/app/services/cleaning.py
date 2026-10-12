@@ -39,7 +39,7 @@ def normalize_merchant(raw_description: str) -> str:
 # ---- Row-level parsing -------------------------------------------------------
 
 def parse_date(raw_value: str) -> date | None:
-    text = raw_value.strip()
+    text = raw_value.strip().split(" ")[0].split("T")[0]  # drop any time part (Excel adds one)
     if not text:
         return None
     # Try the formats we expect from CSV exports; add more here if needed.
