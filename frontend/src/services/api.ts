@@ -65,3 +65,46 @@ export const api = {
   },
 
 };
+export interface TransactionRow {
+  id: number;
+  date: string;
+  merchant: string;
+  amount: number;
+  type: string;
+  category: string;
+  category_source: string;
+  is_duplicate: boolean;
+}
+
+export interface UploadResult {
+  upload_id: number;
+  filename: string;
+  rows_total: number;
+  rows_accepted: number;
+  rows_rejected: number;
+  duplicates_flagged: number;
+  fixes_applied: number;
+  rejected_rows: { row_number: number; reason: string }[];
+}
+
+export async function uploadFile(file: File): Promise<UploadResult> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await fetch(`${API_BASE_URL}/uploads`, { method: "POST", body: formData });
+  const body = await response.json();
+  if (!response.ok) {
+    throw new Error(body.detail ?? "Upload failed");
+  }
+  return body as UploadResult;
+}
+
+export async function getTransactions(): Promise<TransactionRow[]> {
+  const response = await fetch(`${API_BASE_URL}/transactions?limit=100`);
+  if (!response.ok) throw new Error("Could not load transactions");
+  return response.json();
+}
+
+export async function resetData(): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/data`, { method: "DELETE" });
+  if (!response.ok) throw new Error("Could not reset data");
+}

@@ -1,8 +1,19 @@
-import { useEffect, useState } from "react";
-import { api, type Summary, type CategoryBreakdown, type MonthlyBreakdown, type DailyTrend, type TopMerchant } from "./services/api";
+import { useCallback, useEffect, useState } from "react";
+import {
+  api,
+  getTransactions,
+  type CategoryBreakdown,
+  type DailyTrend,
+  type MonthlyBreakdown,
+  type Summary,
+  type TopMerchant,
+  type TransactionRow,
+} from "./services/api";
 import { SummaryCards } from "./components/SummaryCards";
 import { DashboardCharts } from "./components/DashboardCharts";
-import { Chatbot } from "./components/Chatbot";
+import { UploadPanel } from "./components/UploadPanel";
+import { TransactionsTable } from "./components/TransactionsTable";
+import { Chatbot } from "./components/chatbot";
 
 function App() {
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -10,27 +21,37 @@ function App() {
   const [monthly, setMonthly] = useState<MonthlyBreakdown[]>([]);
   const [trends, setTrends] = useState<DailyTrend[]>([]);
   const [merchants, setMerchants] = useState<TopMerchant[]>([]);
+  const [transactions, setTransactions] = useState<TransactionRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    Promise.all([
-      api.getSummary(),
-      api.getCategories(),
-      api.getMonthly(),
-      api.getTrends(),
-      api.getTopMerchants(),
-    ])
-      .then(([summaryData, categoriesData, monthlyData, trendsData, merchantsData]) => {
-        setSummary(summaryData);
-        setCategories(categoriesData);
-        setMonthly(monthlyData);
-        setTrends(trendsData);
-        setMerchants(merchantsData);
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+  const loadAll = useCallback(async () => {
+    try {
+      const [s, c, m, t, mer, tx] = await Promise.all([
+        api.getSummary(),
+        api.getCategories(),
+        api.getMonthly(),
+        api.getTrends(),
+        api.getTopMerchants(),
+        getTransactions(),
+      ]);
+      setSummary(s);
+      setCategories(c);
+      setMonthly(m);
+      setTrends(t);
+      setMerchants(mer);
+      setTransactions(tx);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadAll();
+  }, [loadAll]);
 
   if (error) {
     return <div className="p-6 text-red-600">Error loading dashboard: {error}</div>;
@@ -43,9 +64,11 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <h1 className="text-3xl font-bold text-gray-800 mb-6">Personal Finance Intelligence</h1>
+      <UploadPanel onDataChanged={loadAll} />
       <SummaryCards summary={summary} />
       <DashboardCharts categories={categories} monthly={monthly} trends={trends} merchants={merchants} />
-     <Chatbot />    
+      <TransactionsTable transactions={transactions} />
+      <Chatbot />
     </div>
   );
 }

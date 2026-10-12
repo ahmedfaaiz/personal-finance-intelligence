@@ -20,7 +20,7 @@ export function DashboardCharts({ categories, monthly, trends, merchants }: Prop
         <h2 className="text-lg font-semibold mb-4">Spending by Category</h2>
         <ResponsiveContainer width="100%" height={300}>
           <PieChart>
-            <Pie data={categories} dataKey="amount" nameKey="category" cx="50%" cy="50%" outerRadius={100} label={(entry) => entry.category}>
+            <Pie data={categories} dataKey="amount" nameKey="category" cx="50%" cy="50%" outerRadius={100} label={({ name }) => name}>
               {categories.map((_, index) => (
                 <Cell key={index} fill={COLORS[index % COLORS.length]} />
               ))}
